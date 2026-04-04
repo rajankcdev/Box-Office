@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Box Office</title>
+<style>
+body { margin:0; background:#141414; color:#ffffff; font-family:Inter, Arial, sans-serif; }
+canvas { width:100% !important; height:auto !important; }
+input[type="range"] { accent-color:#e50914; }
+@keyframes goldShine {
+  0% { background-position: -220% center; }
+  100% { background-position: 220% center; }
+}
+@keyframes shimmerSweep {
+  0% { transform: translateX(-180%) skewX(-22deg); opacity: 0; }
+  18% { opacity: 0.18; }
+  50% { opacity: 0.4; }
+  82% { opacity: 0.14; }
+  100% { transform: translateX(220%) skewX(-22deg); opacity: 0; }
+}
+.gold-title {
+  position: relative;
+  display: inline-block;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  /* calmer gold gradient */
+  background: linear-gradient(110deg, #b8911a 0%, #ffd700 35%, #fff2a6 50%, #ffd700 65%, #b8911a 100%);
+  background-size: 180% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* reduce glow for readability */
+  text-shadow: 0 1px 0 rgba(110,78,0,0.5), 0 6px 14px rgba(255,215,0,0.18);
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+  /* slower, subtler shine */
+  animation: goldShine 9s linear infinite;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.gold-title::before {
+  content: '';
+  position: absolute;
+  inset: -8% -6%;
+  border-radius: 14px;
+  /* softer shimmer */
+  background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.12) 55%, rgba(255,255,255,0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: shimmerSweep 6s ease-in-out infinite;
+  opacity: 0.5;
+}
+.gold-title:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45));
+}
+.gold-title:hover::before {
+  animation-duration: 2.5s;
+}
+.gold-title::before {
+  content: '';
+  position: absolute;
+  inset: -12% -10%;
+  border-radius: 18px;
+  background: linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 30%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.4) 70%, rgba(255,255,255,0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: shimmerSweep 3s ease-in-out infinite;
+}
+.gold-title:hover {
+  transform: translateY(-2px) scale(1.03) rotateX(8deg);
+  filter: drop-shadow(0 10px 25px rgba(0,0,0,0.5));
+}
+.gold-title:hover::before {
+  animation-duration: 1.2s;
+}
+.gold-title::before {
+  content: '';
+  position: absolute;
+  inset: -10% -8%;
+  border-radius: 16px;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,245,200,0.08) 35%, rgba(255,255,255,0.55) 50%, rgba(255,240,180,0.1) 65%, rgba(255,255,255,0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: shimmerSweep 5.5s ease-in-out infinite;
+}
+.gold-title:hover {
+  transform: translateY(-1px) scale(1.015) rotateX(6deg);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.34));
+}
+.gold-title:hover::before {
+  animation-duration: 1.8s;
+}
+</style>
+</head>
+<body style="margin:0; background:#141414; color:#ffffff; font-family:Inter, Arial, sans-serif;">
+<div id="app" style="min-height:100vh; background:#141414; color:#ffffff;"></div>
+<script>
+const APP_DATA = {"metrics": {"clean_rows": 3229, "feature_count": 49, "r2": 0.44902832945979454, "mae": 73307965.83257712, "record_revenue": 2787965087.0, "median_runtime": 107.0, "baseline_june_month": 6}, "topGenres": ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "Crime", "Science Fiction", "Family", "Fantasy", "Horror", "Mystery", "Animation", "History", "War", "Other"], "topCompanies": ["Warner Bros.", "Universal Pictures", "Paramount Pictures", "Twentieth Century Fox Film Corporation", "Columbia Pictures", "New Line Cinema", "Relativity Media", "Walt Disney Pictures", "Touchstone Pictures", "Metro-Goldwyn-Mayer (MGM)", "Columbia Pictures Corporation", "Village Roadshow Pictures", "DreamWorks SKG", "Miramax Films", "United Artists", "Other"], "topLangs": ["en", "fr", "es", "ja", "zh", "de", "hi", "it", "ru", "cn", "other"], "budgetBreakpoints": [500000.0, 832858.1691305467, 1387305.45977497, 2310857.3705059863, 3849232.8774428833, 6411730.093728373, 10680123.573643684, 17790056.331265707, 29633187.4895745, 49360484.55613849, 82220565.5896441, 136956139.44373834, 228130079.0965991, 380000000.0], "lookup": {"Drama": {"Warner Bros.": [7666636.025900047, 4728127.833140995, 5877828.696583222, 11039952.263070924, 12501043.696833316, 15151892.696952643, 37167641.75403444, 25718675.103724632, 55560193.48081949, 91499321.03981818, 160206399.86351612, 295308852.9849051, 382411939.45023125, 330668570.2557948], "Universal Pictures": [12152548.957882997, 7604075.083585716, 9453096.78910705, 18500780.60853552, 20667104.819285985, 25537799.724486154, 59295013.591103315, 39872481.13022505, 64936824.977608286, 116728317.89811608, 194421960.72835946, 351942491.6082527, 455750003.4752894, 394083412.43169713], "Paramount Pictures": [12367856.505929206, 7627440.273196133, 9482143.502977384, 16704992.583955958, 21523366.502929073, 23236381.911152985, 51683592.628368214, 40739193.72340784, 74124167.41872981, 108867393.68378425, 189311260.25078452, 348712371.2875082, 451567140.13382393, 390466523.6827418], "Twentieth Century Fox Film Corporation": [16125245.539494563, 9944677.852973217, 12362845.011147805, 27877862.939921208, 40024716.40366519, 45529068.00312357, 77736775.61084993, 62894784.03716561, 94186884.81961042, 131734505.449692, 226225646.50737596, 345134822.7746149, 437649499.70139027, 385897110.0564768], "Columbia Pictures": [9304216.08941633, 5738047.761361343, 7133322.688975398, 13199420.172567403, 14946308.11188243, 18748786.86703052, 46305873.30629554, 42282559.274281174, 65609183.53890669, 90884647.31078644, 168349697.76195198, 310319414.0928441, 401849954.00033736, 347476467.2366409], "New Line Cinema": [17873156.205831647, 11022640.301351182, 13272904.556976937, 24402910.32377234, 27632533.116949443, 35577916.15447886, 74066111.62328926, 55274787.9450602, 78275356.43558572, 129327437.24418266, 188260842.94951952, 347021677.1433504, 449377765.79014695, 388573389.0559427], "Relativity Media": [8416765.668835334, 5190743.916486837, 6452935.392861799, 11398452.555006856, 12906989.99629009, 15643919.989487516, 40510682.09937772, 32240994.57682733, 67099057.71395085, 108139720.43765476, 168367826.69617593, 310352831.2020282, 401893227.68277144, 347513885.64655405], "Walt Disney Pictures": [8408382.735223075, 5185574.03691845, 6446508.395475049, 11387099.920058763, 12679087.980241688, 15037009.756930852, 39992499.37544978, 37430434.01619081, 72116760.64277409, 118765508.36658396, 213063484.71254173, 379691196.99041367, 491683353.00742483, 425154694.714978], "Touchstone Pictures": [10957034.51343092, 7251241.515228614, 9173212.024853138, 15344709.898941332, 16904372.025703967, 20818207.136493474, 54108232.86455426, 37265688.52168764, 71367584.59760746, 121614718.66725925, 212935527.87133268, 381238609.7749724, 487566950.584091, 421595274.1947005], "Metro-Goldwyn-Mayer (MGM)": [6822923.007262401, 4207797.493144397, 5230973.834459364, 9239982.174784023, 10462855.129323164, 12681505.84063807, 32960277.49223749, 28413008.933156062, 58421993.935835004, 92136497.56083454, 161322033.89086273, 297365303.9400887, 385074952.73141336, 332971256.71450466], "Columbia Pictures Corporation": [11189225.08867147, 6954246.34611945, 8983337.641067263, 15868149.875061017, 17968232.97874187, 21778400.54725905, 50425392.20211138, 42154057.315496914, 61703430.798193865, 101616313.15840256, 177920267.66876203, 327960869.21529126, 424694860.2559605, 367230276.4485753], "Village Roadshow Pictures": [6477959.589012565, 3995053.433565752, 4966498.521858309, 8772813.5272727, 9933858.673963845, 12040335.582307618, 31293823.297079068, 26976462.224021398, 56849431.35650214, 93622502.80106528, 163923884.32968992, 286352006.0539393, 370813217.74254614, 320639247.6071393], "DreamWorks SKG": [6571254.815931282, 4120974.0076272683, 5123038.183900026, 9049324.863921415, 10246965.12434978, 12419836.31741655, 32280176.89640969, 27826736.42974407, 58802009.494900756, 101420320.49428289, 177577103.6035616, 319891183.7490786, 414244973.51428103, 358194342.28138435], "Miramax Films": [7884040.115947766, 5089186.975269804, 6326683.67129374, 11404175.25689702, 12913470.073733432, 14843574.32255902, 38579671.16358279, 30822717.43480683, 58354065.26852179, 96100409.58584887, 168262457.76188117, 310158604.38546854, 401641712.5222682, 347296402.4825219], "United Artists": [10679143.551573899, 6585985.932340715, 7930510.404895982, 14490708.30874588, 15026626.864771394, 18213026.27510106, 37730570.5102117, 30196943.55788977, 60900832.82172826, 100294554.45321149, 174857266.038179, 322314830.75237143, 417383489.4815097, 360908192.14058363]}, "Comedy": {"Warner Bros.": [10978202.672513437, 6238060.953692836, 7682831.295321416, 15725861.140556114, 17523663.433226395, 24760873.784380108, 65754801.77520756, 45424790.146734536, 75249477.10058719, 121908237.28278297, 205201603.1116871, 378248622.14778143, 489815282.2151963, 423539388.72023416]}}};
+
+const MONTHS = [
+  'January','February','March','April','May','June','July','August','September','October','November','December'
+];
+
+const MONTH_MULTIPLIERS = {
+  1: 0.92, 2: 0.88, 3: 0.94, 4: 0.98, 5: 1.12, 6: 1.0,
+  7: 1.11, 8: 0.96, 9: 0.89, 10: 0.93, 11: 1.09, 12: 1.15
+};
+
+const genreStats = [
+  { genre:'Adventure', avgRevenue:287000000, roi:164, count:183 },
+  { genre:'Animation', avgRevenue:271000000, roi:211, count:120 },
+  { genre:'Fantasy', avgRevenue:239000000, roi:132, count:205 },
+  { genre:'Family', avgRevenue:228000000, roi:148, count:191 },
+  { genre:'Action', avgRevenue:214000000, roi:119, count:521 },
+  { genre:'Science Fiction', avgRevenue:202000000, roi:123, count:227 },
+  { genre:'Comedy', avgRevenue:138000000, roi:96, count:701 },
+  { genre:'Drama', avgRevenue:103000000, roi:77, count:1188 },
+  { genre:'Thriller', avgRevenue:127000000, roi:91, count:412 },
+  { genre:'Crime', avgRevenue:118000000, roi:83, count:315 },
+  { genre:'Romance', avgRevenue:111000000, roi:78, count:291 },
+  { genre:'Mystery', avgRevenue:114000000, roi:86, count:155 },
+  { genre:'Other', avgRevenue:97000000, roi:63, count:222 }
+];
+
+const monthStats = [
+  { month:'Jan', avg:119000000 }, { month:'Feb', avg:106000000 }, { month:'Mar', avg:128000000 },
+  { month:'Apr', avg:137000000 }, { month:'May', avg:191000000 }, { month:'Jun', avg:171000000 },
+  { month:'Jul', avg:194000000 }, { month:'Aug', avg:143000000 }, { month:'Sep', avg:101000000 },
+  { month:'Oct', avg:117000000 }, { month:'Nov', avg:179000000 }, { month:'Dec', avg:201000000 }
+];
+
+const topFilms = [
+  { rank:1, title:'Avatar', year:2009, genre:'Action', budget:237000000, revenue:2787965087 },
+  { rank:2, title:'Titanic', year:1997, genre:'Drama', budget:200000000, revenue:1845034188 },
+  { rank:3, title:'The Avengers', year:2012, genre:'Action', budget:220000000, revenue:1519557910 },
+  { rank:4, title:'Jurassic World', year:2015, genre:'Adventure', budget:150000000, revenue:1513528810 },
+  { rank:5, title:'Furious 7', year:2015, genre:'Action', budget:190000000, revenue:1506249360 },
+  { rank:6, title:'Avengers: Age of Ultron', year:2015, genre:'Action', budget:280000000, revenue:1405403694 },
+  { rank:7, title:'Frozen', year:2013, genre:'Animation', budget:150000000, revenue:1274219009 },
+  { rank:8, title:'Iron Man 3', year:2013, genre:'Action', budget:200000000, revenue:1215439994 },
+  { rank:9, title:'Minions', year:2015, genre:'Animation', budget:74000000, revenue:1156730962 },
+  { rank:10, title:'Captain America: Civil War', year:2016, genre:'Action', budget:250000000, revenue:1153304495 },
+  { rank:11, title:'Transformers: Dark of the Moon', year:2011, genre:'Action', budget:195000000, revenue:1123746996 },
+  { rank:12, title:'Skyfall', year:2012, genre:'Action', budget:200000000, revenue:1108561013 },
+  { rank:13, title:'Transformers: Age of Extinction', year:2014, genre:'Action', budget:210000000, revenue:1091405097 },
+  { rank:14, title:'The Dark Knight Rises', year:2012, genre:'Action', budget:250000000, revenue:1084939099 },
+  { rank:15, title:'Toy Story 3', year:2010, genre:'Animation', budget:200000000, revenue:1066969703 },
+  { rank:16, title:'Pirates of the Caribbean: Dead Man\'s Chest', year:2006, genre:'Adventure', budget:200000000, revenue:1065659812 },
+  { rank:17, title:'Alice in Wonderland', year:2010, genre:'Fantasy', budget:200000000, revenue:1025491110 },
+  { rank:18, title:'The Hobbit: An Unexpected Journey', year:2012, genre:'Adventure', budget:250000000, revenue:1021103568 },
+  { rank:19, title:'The Dark Knight', year:2008, genre:'Action', budget:185000000, revenue:1004558444 },
+  { rank:20, title:'Zootopia', year:2016, genre:'Animation', budget:150000000, revenue:1023784195 }
+];
+
+let state = {
+  tab: 'predict',
+  budget: 50000000,
+  runtime: 110,
+  month: 6,
+  selectedGenres: [],
+  selectedStudio: '',
+  selectedLanguage: '',
+  predictionMode: 'pre',
+  voteCount: 1200,
+  voteAverage: 6.8,
+  popularity: 35,
+  prediction: null
+};
+
+function formatMoney(v) {
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+  return '$' + Math.round(v).toLocaleString();
+}
+function formatPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(0) + '%'; }
+function escapeHtml(str) { return String(str).replace(/[&<>\"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+function maxBy(arr, key){ return Math.max(...arr.map(x => x[key])); }
+
+function interpolateLogBudget(budget, values) {
+  const x = Math.log(Math.max(500000, Math.min(380000000, budget)));
+  const breaks = APP_DATA.budgetBreakpoints;
+  const logs = breaks.map(b => Math.log(b));
+  if (x <= logs[0]) return values[0];
+  if (x >= logs[logs.length - 1]) return values[values.length - 1];
+  for (let i = 0; i < logs.length - 1; i++) {
+    if (x >= logs[i] && x <= logs[i + 1]) {
+      const t = (x - logs[i]) / (logs[i + 1] - logs[i]);
+      return values[i] + t * (values[i + 1] - values[i]);
+    }
+  }
+  return values[values.length - 1];
+}
+
+function predictRevenue() {
+  const rawGenre = state.selectedGenres[0] || 'Drama';
+  const rawStudio = state.selectedStudio || 'Warner Bros.';
+  const genre = APP_DATA.lookup[rawGenre] ? rawGenre : 'Drama';
+  const studio = rawStudio === 'Other' ? 'Warner Bros.' : rawStudio;
+  const table = APP_DATA.lookup[genre] || APP_DATA.lookup['Drama'];
+  const curve = (table && table[studio]) ? table[studio] : table[Object.keys(table)[0]];
+  let pred = interpolateLogBudget(state.budget, curve);
+  pred *= MONTH_MULTIPLIERS[state.month] || 1;
+  pred *= 1 + ((state.runtime - 107) / 500);
+  if (state.selectedGenres.length > 1) pred *= 1 + Math.min(0.08, (state.selectedGenres.length - 1) * 0.02);
+  if (state.selectedLanguage && state.selectedLanguage !== 'en') pred *= 0.93;
+
+  if (state.predictionMode === 'post') {
+    const voteBoost = 1 + Math.min(0.55, Math.log10(Math.max(1, state.voteCount)) * 0.11);
+    const ratingBoost = 1 + ((Math.max(0, Math.min(10, state.voteAverage)) - 5) * 0.045);
+    const popularityBoost = 1 + Math.min(0.6, Math.log1p(Math.max(0, state.popularity)) * 0.12);
+    pred *= voteBoost * ratingBoost * popularityBoost;
+  }
+
+  pred = Math.max(100000, pred);
+
+  const profit = pred - state.budget;
+  const roi = state.budget > 0 ? (profit / state.budget) * 100 : 0;
+  const badge = roi > 100 ? 'Blockbuster potential' : roi > 0 ? 'Profitable outlook' : 'Loss-making risk';
+  const badgeColor = roi > 100 ? '#e50914' : roi > 0 ? '#2d7d46' : '#7a2f2f';
+  const genreAvg = (genreStats.find(g => g.genre === rawGenre) || genreStats[0]).avgRevenue;
+  const monthAvg = monthStats[state.month - 1].avg;
+
+  state.prediction = {
+    revenue: pred,
+    profit,
+    roi,
+    badge,
+    badgeColor,
+    genre,
+    studio,
+    language: state.selectedLanguage || 'en',
+    genreAvg,
+    monthAvg,
+    budgetMultiple: pred / Math.max(1, state.budget),
+    recordShare: (pred / APP_DATA.metrics.record_revenue) * 100,
+    genreShare: (pred / genreAvg) * 100,
+    roiShare: Math.max(0, Math.min(100, roi > 0 ? Math.min(roi, 400) / 4 : 0))
+  };
+}
+
+function renderTabs() {
+  const tabs = [
+    { key:'predict', label:'Predict' },
+    { key:'insights', label:'Insights' },
+    { key:'topfilms', label:'Top Films' }
+  ];
+  return `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">${tabs.map(t => `
+    <button onclick="setTab('${t.key}')" style="background:${state.tab === t.key ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.tab === t.key ? '#e50914' : '#3a3a3a'}; border-radius:999px; padding:12px 18px; font-size:14px; font-weight:700; cursor:pointer;">${t.label}</button>
+  `).join('')}</div>`;
+}
+
+function renderChips(items, selected, multi, clickFn) {
+  return `<div style="display:flex; flex-wrap:wrap; gap:10px;">${items.map(item => {
+    const active = multi ? selected.includes(item) : selected === item;
+    return `<button onclick="${clickFn}('${String(item).replace(/'/g, "\'")}')" style="background:${active ? '#e50914' : '#3a3a3a'}; color:#ffffff; border:1px solid ${active ? '#e50914' : '#4a4a4a'}; border-radius:999px; padding:9px 14px; font-size:13px; cursor:pointer;">${escapeHtml(item)}</button>`;
+  }).join('')}</div>`;
+}
+
+function renderPredictTab() {
+  const p = state.prediction;
+  return `
+    <div style="display:grid; grid-template-columns:minmax(320px, 1.1fr) minmax(320px, 0.9fr); gap:24px; align-items:start;">
+      <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:24px;">
+        <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">
+          <div style="font-size:24px; font-weight:800; color:#ffffff;">Box Office predictor</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="setPredictionMode('pre')" style="background:${state.predictionMode === 'pre' ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.predictionMode === 'pre' ? '#e50914' : '#404040'}; border-radius:999px; padding:10px 14px; font-size:13px; font-weight:800; cursor:pointer;">Pre-release mode</button>
+            <button onclick="setPredictionMode('post')" style="background:${state.predictionMode === 'post' ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.predictionMode === 'post' ? '#e50914' : '#404040'}; border-radius:999px; padding:10px 14px; font-size:13px; font-weight:800; cursor:pointer;">Post-release mode</button>
+          </div>
+        </div>
+        <div style="background:${state.predictionMode === 'post' ? '#2b1717' : '#111111'}; border:1px solid ${state.predictionMode === 'post' ? '#5a2d2d' : '#2c2c2c'}; border-radius:16px; padding:14px 16px; margin-bottom:18px; color:#d6d6d6; font-size:14px; line-height:1.6;">
+          ${state.predictionMode === 'pre' ? 'Pre-release mode uses only signals available before launch, so it is appropriate for planning, greenlighting, and forecasting upcoming films.' : 'Post-release mode adds vote count, vote average, and popularity. It is more accurate for estimating performance after launch, but it uses signals that are not available before release.'}
+        </div>
+        <div style="display:grid; gap:18px;">
+          <div>
+            <div style="font-size:14px; color:#b3b3b3; margin-bottom:8px;">Budget</div>
+            <input id="budgetInput" type="number" value="${state.budget}" min="500000" max="380000000" oninput="updateBudget(this.value)" style="width:100%; background:#111111; color:#ffffff; border:1px solid #333333; border-radius:14px; padding:14px; font-size:16px; box-sizing:border-box;">
+          </div>
+          <div>
+            <div style="font-size:14px; color:#b3b3b3; margin-bottom:8px;">Release month</div>
+            <select onchange="updateMonth(this.value)" style="width:100%; background:#111111; color:#ffffff; border:1px solid #333333; border-radius:14px; padding:14px; font-size:16px; box-sizing:border-box;">
+              ${MONTHS.map((m, i) => `<option value="${i+1}" ${state.month === i+1 ? 'selected' : ''}>${m}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:8px;">
+              <div style="font-size:14px; color:#b3b3b3;">Runtime</div>
+              <div style="font-size:14px; color:#ffffff;">${state.runtime} min</div>
+            </div>
+            <input type="range" min="75" max="210" value="${state.runtime}" oninput="updateRuntime(this.value)" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:14px; color:#b3b3b3; margin-bottom:10px;">Genres (multi-select)</div>
+            ${renderChips(APP_DATA.topGenres, state.selectedGenres, true, 'toggleGenre')}
+          </div>
+          <div>
+            <div style="font-size:14px; color:#b3b3b3; margin-bottom:10px;">Studio (single-select)</div>
+            ${renderChips(APP_DATA.topCompanies, state.selectedStudio, false, 'selectStudio')}
+          </div>
+          <div>
+            <div style="font-size:14px; color:#b3b3b3; margin-bottom:10px;">Language (single-select)</div>
+            ${renderChips(APP_DATA.topLangs, state.selectedLanguage, false, 'selectLanguage')}
+          </div>
+          ${state.predictionMode === 'post' ? `
+          <div style="background:#111111; border:1px solid #2c2c2c; border-radius:16px; padding:16px; display:grid; gap:16px;">
+            <div style="font-size:15px; color:#ffffff; font-weight:800;">Post-release inputs</div>
+            <div>
+              <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                <div style="font-size:14px; color:#b3b3b3;">Vote count</div>
+                <div style="font-size:14px; color:#ffffff;">${state.voteCount.toLocaleString()}</div>
+              </div>
+              <input type="range" min="0" max="200000" step="100" value="${state.voteCount}" oninput="updateVoteCount(this.value)" style="width:100%;">
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                <div style="font-size:14px; color:#b3b3b3;">Vote average</div>
+                <div style="font-size:14px; color:#ffffff;">${Number(state.voteAverage).toFixed(1)}</div>
+              </div>
+              <input type="range" min="0" max="10" step="0.1" value="${state.voteAverage}" oninput="updateVoteAverage(this.value)" style="width:100%;">
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                <div style="font-size:14px; color:#b3b3b3;">Popularity</div>
+                <div style="font-size:14px; color:#ffffff;">${Number(state.popularity).toFixed(0)}</div>
+              </div>
+              <input type="range" min="0" max="250" step="1" value="${state.popularity}" oninput="updatePopularity(this.value)" style="width:100%;">
+            </div>
+          </div>
+          ` : ''}
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:6px;">
+            <button onclick="runPrediction()" style="background:#e50914; color:#ffffff; border:none; border-radius:14px; padding:14px 18px; font-size:16px; font-weight:800; cursor:pointer;">Predict revenue</button>
+            <button onclick="resetForm()" style="background:#2a2a2a; color:#ffffff; border:1px solid #404040; border-radius:14px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer;">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:24px;">
+        <div style="font-size:15px; color:#b3b3b3; margin-bottom:8px;">Projected worldwide gross</div>
+        <div style="font-size:46px; font-weight:900; color:#ffffff; line-height:1.1; margin-bottom:12px;">${p ? formatMoney(p.revenue) : '$0'}</div>
+        <div style="display:inline-block; background:${p ? p.badgeColor : '#3a3a3a'}; color:#ffffff; border-radius:999px; padding:9px 14px; font-size:14px; font-weight:800; margin-bottom:18px;">${p ? p.badge : 'Awaiting prediction'}</div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px;">
+          ${[
+            ['Budget', formatMoney(state.budget)],
+            ['Revenue', p ? formatMoney(p.revenue) : '$0'],
+            ['Net profit', p ? formatMoney(p.profit) : '$0'],
+            ['ROI', p ? formatPct(p.roi) : '0%']
+          ].map(([label,val]) => `
+            <div style="background:#111111; border:1px solid #2c2c2c; border-radius:16px; padding:16px;">
+              <div style="font-size:13px; color:#9a9a9a; margin-bottom:8px;">${label}</div>
+              <div style="font-size:22px; font-weight:800; color:#ffffff;">${val}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="margin-bottom:22px;">
+          <div style="font-size:16px; font-weight:800; margin-bottom:12px;">Benchmarks</div>
+          ${p ? [
+            { label:'Vs all-time record', pct: Math.min(100, p.recordShare), text: p.recordShare.toFixed(1) + '% of Avatar' },
+            { label:'Vs genre average', pct: Math.min(100, p.genreShare), text: p.genreShare.toFixed(1) + '% of genre avg' },
+            { label:'Return on budget', pct: Math.min(100, p.roiShare), text: formatPct(p.roi) + ' ROI' }
+          ].map(row => `
+            <div style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; gap:12px; font-size:13px; margin-bottom:6px; color:#cfcfcf;"><span>${row.label}</span><span>${row.text}</span></div>
+              <div style="height:12px; background:#2a2a2a; border-radius:999px; overflow:hidden;">
+                <div style="height:12px; width:${row.pct}%; background:#e50914; border-radius:999px; transition:width 700ms ease;"></div>
+              </div>
+            </div>
+          `).join('') : '<div style="color:#9a9a9a; font-size:14px;">Run a prediction to see benchmark bars.</div>'}
+        </div>
+
+        <div>
+          <div style="font-size:16px; font-weight:800; margin-bottom:12px;">Context</div>
+          <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            <tbody>
+              ${[
+                ['Genre avg', p ? formatMoney(p.genreAvg) : '—'],
+                ['Month historical avg', p ? formatMoney(p.monthAvg) : '—'],
+                ['Studio selected', state.selectedStudio || 'Other'],
+                ['Budget multiple', p ? p.budgetMultiple.toFixed(2) + '×' : '—']
+              ].map(([a,b], idx) => `
+                <tr style="border-top:${idx===0 ? '1px solid #2c2c2c' : '1px solid #2c2c2c'};">
+                  <td style="padding:12px 8px 12px 0; color:#9a9a9a;">${a}</td>
+                  <td style="padding:12px 0; color:#ffffff; text-align:right; font-weight:700;">${b}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function barSvg(data, valueKey, highlightFn) {
+  const width = 900, height = 300, pad = 28;
+  const max = Math.max(...data.map(d => d[valueKey]));
+  const barW = (width - pad * 2) / data.length * 0.72;
+  const gap = (width - pad * 2) / data.length;
+  let s = `<svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block; background:#111111; border-radius:16px;">`;
+  s += `<line x1="${pad}" y1="${height-pad}" x2="${width-pad}" y2="${height-pad}" stroke="#444444" stroke-width="1"/>`;
+  data.forEach((d, i) => {
+    const x = pad + i * gap + (gap - barW) / 2;
+    const h = ((height - pad * 2) * d[valueKey]) / max;
+    const y = height - pad - h;
+    const fill = highlightFn && highlightFn(d, i) ? '#e50914' : '#7f7f7f';
+    s += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${fill}"/>`;
+    s += `<text x="${x + barW/2}" y="${height - 10}" fill="#cccccc" font-size="11" text-anchor="middle">${d.genre || d.month}</text>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+function renderInsightsTab() {
+  return `
+    <div style="display:grid; gap:24px;">
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px;">
+        ${genreStats.slice(0, 9).map(g => `
+          <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:18px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:start; margin-bottom:12px;">
+              <div style="font-size:18px; font-weight:800; color:#ffffff;">${g.genre}</div>
+              <div style="background:#e50914; color:#ffffff; border-radius:999px; padding:6px 10px; font-size:12px; font-weight:800;">${g.count} films</div>
+            </div>
+            <div style="display:grid; gap:8px;">
+              <div style="font-size:14px; color:#9a9a9a;">Avg revenue</div>
+              <div style="font-size:28px; font-weight:900; color:#ffffff;">${formatMoney(g.avgRevenue)}</div>
+              <div style="font-size:14px; color:#9a9a9a; margin-top:6px;">Avg ROI</div>
+              <div style="font-size:22px; font-weight:800; color:#ffffff;">${formatPct(g.roi)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:20px;">
+          <div style="font-size:20px; font-weight:800; margin-bottom:14px;">Revenue by genre</div>
+          ${barSvg(genreStats, 'avgRevenue')}
+        </div>
+        <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:20px;">
+          <div style="font-size:20px; font-weight:800; margin-bottom:14px;">ROI by genre</div>
+          ${barSvg(genreStats, 'roi')}
+        </div>
+      </div>
+
+      <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:20px;">
+        <div style="font-size:20px; font-weight:800; margin-bottom:8px;">Monthly seasonality</div>
+        <div style="font-size:14px; color:#9a9a9a; margin-bottom:14px;">Summer and holiday windows stand out. May–July and November–December are highlighted in red.</div>
+        ${barSvg(monthStats, 'avg', d => ['May','Jun','Jul','Nov','Dec'].includes(d.month))}
+      </div>
+    </div>
+  `;
+}
+
+function renderTopFilmsTab() {
+  const maxRevenue = maxBy(topFilms, 'revenue');
+  return `
+    <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:20px; overflow:auto;">
+      <div style="font-size:22px; font-weight:800; margin-bottom:16px;">Top 20 films by revenue</div>
+      <table style="width:100%; border-collapse:collapse; min-width:980px;">
+        <thead>
+          <tr>
+            ${['Rank','Title / Year','Genre','Budget','Revenue','ROI'].map(h => `<th style="text-align:left; padding:12px 10px; color:#9a9a9a; font-size:13px; border-bottom:1px solid #2f2f2f;">${h}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${topFilms.map(f => {
+            const roi = ((f.revenue - f.budget) / f.budget) * 100;
+            const w = (f.revenue / maxRevenue) * 100;
+            return `
+              <tr>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424; font-weight:800; color:#ffffff;">${f.rank}</td>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424; color:#ffffff;"><div style="font-weight:700;">${f.title}</div><div style="font-size:12px; color:#9a9a9a;">${f.year}</div></td>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424;"><span style="display:inline-block; background:#e50914; color:#ffffff; border-radius:999px; padding:6px 10px; font-size:12px; font-weight:700;">${f.genre}</span></td>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424; color:#ffffff; font-weight:700;">${formatMoney(f.budget)}</td>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424; color:#ffffff;">
+                  <div style="font-weight:800; margin-bottom:8px;">${formatMoney(f.revenue)}</div>
+                  <div style="height:10px; background:#2a2a2a; border-radius:999px; overflow:hidden; width:220px;">
+                    <div style="height:10px; width:${w}%; background:#e50914; border-radius:999px;"></div>
+                  </div>
+                </td>
+                <td style="padding:14px 10px; border-bottom:1px solid #242424; color:${roi >= 0 ? '#ffffff' : '#ff9f9f'}; font-weight:800;">${formatPct(roi)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="max-width:1280px; margin:0 auto; padding:28px; box-sizing:border-box;">
+      <div style="display:flex; justify-content:space-between; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-bottom:18px;">
+        <div>
+          <div class="gold-title">Box Office</div>
+          <div style="margin-top:10px; font-size:20px; font-weight:800; color:#ffffff; max-width:680px; text-shadow: 0 0 8px rgba(229,9,20,0.6), 0 0 16px rgba(229,9,20,0.4), 0 0 24px rgba(229,9,20,0.25); letter-spacing:0.02em;">Predict the next blockbuster.</div>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div style="background:#1b1b1b; border:1px solid #2a2a2a; color:#ffffff; border-radius:16px; padding:12px 16px; min-width:130px;">
+            <div style="font-size:12px; color:#9a9a9a;">Mode</div>
+            <div style="font-size:24px; font-weight:900;">${state.predictionMode === 'pre' ? 'Pre' : 'Post'}</div>
+          </div>
+        </div>
+      </div>
+
+      ${renderTabs()}
+
+      ${state.tab === 'predict' ? renderPredictTab() : state.tab === 'insights' ? renderInsightsTab() : renderTopFilmsTab()}
+    </div>
+  `;
+}
+
+function setTab(tab){ state.tab = tab; render(); }
+function setPredictionMode(mode){ state.predictionMode = mode; state.prediction = null; render(); }
+function updateBudget(v){ state.budget = Math.max(500000, Math.min(380000000, Number(v) || 500000)); }
+function updateMonth(v){ state.month = Number(v) || 6; }
+function updateRuntime(v){ state.runtime = Number(v) || 110; render(); }
+function updateVoteCount(v){ state.voteCount = Number(v) || 0; render(); }
+function updateVoteAverage(v){ state.voteAverage = Number(v) || 0; render(); }
+function updatePopularity(v){ state.popularity = Number(v) || 0; render(); }
+function toggleGenre(g){
+  if (state.selectedGenres.includes(g)) state.selectedGenres = state.selectedGenres.filter(x => x !== g);
+  else state.selectedGenres = [...state.selectedGenres, g];
+  render();
+}
+function selectStudio(s){ state.selectedStudio = state.selectedStudio === s ? '' : s; render(); }
+function selectLanguage(l){ state.selectedLanguage = state.selectedLanguage === l ? '' : l; render(); }
+function runPrediction(){ predictRevenue(); render(); }
+function resetForm(){
+  state.budget = 50000000;
+  state.runtime = 110;
+  state.month = 6;
+  state.selectedGenres = [];
+  state.selectedStudio = '';
+  state.selectedLanguage = '';
+  state.voteCount = 1200;
+  state.voteAverage = 6.8;
+  state.popularity = 35;
+  state.prediction = null;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
