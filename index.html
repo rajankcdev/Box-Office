@@ -165,7 +165,18 @@ let state = {
   voteCount: 1200,
   voteAverage: 6.8,
   popularity: 35,
+  authView: 'login',
+  loginName: '',
+  loginEmail: '',
+  loginPassword: '',
+  currentUser: null,
   prediction: null
+};
+
+const STORAGE_KEYS = {
+  users: 'boxoffice_users',
+  session: 'boxoffice_session',
+  predictions: 'boxoffice_predictions'
 };
 
 function formatMoney(v) {
@@ -238,13 +249,105 @@ function predictRevenue() {
     genreShare: (pred / genreAvg) * 100,
     roiShare: Math.max(0, Math.min(100, roi > 0 ? Math.min(roi, 400) / 4 : 0))
   };
+  savePredictionForUser(state.prediction);
+}
+
+function getStoredUsers() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || '[]'); } catch(e) { return []; }
+}
+function saveStoredUsers(users) {
+  localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
+}
+function getStoredPredictions() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.predictions) || '{}'); } catch(e) { return {}; }
+}
+function saveStoredPredictions(map) {
+  localStorage.setItem(STORAGE_KEYS.predictions, JSON.stringify(map));
+}
+function loadSession() {
+  try {
+    const session = JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null');
+    if (session && session.email) state.currentUser = session;
+  } catch(e) {}
+}
+function setSession(user) {
+  state.currentUser = user;
+  localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(user));
+}
+function logout() {
+  state.currentUser = null;
+  localStorage.removeItem(STORAGE_KEYS.session);
+  state.tab = 'account';
+  loadSession();
+render();
+}
+function signup() {
+  const name = state.loginName.trim();
+  const email = state.loginEmail.trim().toLowerCase();
+  const password = state.loginPassword;
+  if (!name || !email || !password) { alert('Please complete name, email, and password.'); return; }
+  const users = getStoredUsers();
+  if (users.some(u => u.email === email)) { alert('An account with this email already exists.'); return; }
+  const user = { name, email, password };
+  users.push(user);
+  saveStoredUsers(users);
+  setSession({ name, email });
+  state.loginPassword = '';
+  state.tab = 'predict';
+  render();
+}
+function login() {
+  const email = state.loginEmail.trim().toLowerCase();
+  const password = state.loginPassword;
+  const users = getStoredUsers();
+  const found = users.find(u => u.email === email && u.password === password);
+  if (!found) { alert('Invalid email or password.'); return; }
+  setSession({ name: found.name, email: found.email });
+  state.loginPassword = '';
+  state.tab = 'predict';
+  render();
+}
+function savePredictionForUser(prediction) {
+  if (!state.currentUser) return;
+  const all = getStoredPredictions();
+  const email = state.currentUser.email;
+  const items = all[email] || [];
+  items.unshift({
+    timestamp: new Date().toISOString(),
+    mode: state.predictionMode,
+    budget: state.budget,
+    runtime: state.runtime,
+    month: MONTHS[state.month - 1],
+    genre: state.selectedGenres.join(', ') || 'Drama',
+    studio: state.selectedStudio || 'Other',
+    language: state.selectedLanguage || 'en',
+    revenue: prediction.revenue,
+    roi: prediction.roi
+  });
+  all[email] = items.slice(0, 12);
+  saveStoredPredictions(all);
+}
+function getPredictionHistory() {
+  if (!state.currentUser) return [];
+  const all = getStoredPredictions();
+  return all[state.currentUser.email] || [];
+}
+function googleLogin() {
+  const email = prompt('Enter your Google email for demo sign-in:');
+  if (!email) return;
+  const cleanEmail = String(email).trim().toLowerCase();
+  const inferredName = cleanEmail.split('@')[0].split(/[._-]+/).map(part => part ? part.charAt(0).toUpperCase() + part.slice(1) : '').join(' ');
+  setSession({ name: inferredName || 'Google User', email: cleanEmail, provider: 'Google' });
+  state.tab = 'predict';
+  render();
 }
 
 function renderTabs() {
   const tabs = [
     { key:'predict', label:'Predict' },
     { key:'insights', label:'Insights' },
-    { key:'topfilms', label:'Top Films' }
+    { key:'topfilms', label:'Top Films' },
+    { key:'account', label: state.currentUser ? 'Account' : 'Login' }
   ];
   return `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">${tabs.map(t => `
     <button onclick="setTab('${t.key}')" style="background:${state.tab === t.key ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.tab === t.key ? '#e50914' : '#3a3a3a'}; border-radius:999px; padding:12px 18px; font-size:14px; font-weight:700; cursor:pointer;">${t.label}</button>
@@ -490,6 +593,83 @@ function renderTopFilmsTab() {
   `;
 }
 
+function renderAccountTab() {
+  const history = getPredictionHistory();
+  if (!state.currentUser) {
+    return `
+      <div style="display:flex; justify-content:center; align-items:center;">
+        <div style="width:100%; max-width:420px; background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:28px;">
+          <div style="display:flex; gap:10px; margin-bottom:18px; justify-content:center;">
+            <button onclick="setAuthView('login')" style="background:${state.authView === 'login' ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.authView === 'login' ? '#e50914' : '#404040'}; border-radius:999px; padding:10px 14px; font-size:13px; font-weight:800; cursor:pointer;">Login</button>
+            <button onclick="setAuthView('signup')" style="background:${state.authView === 'signup' ? '#e50914' : '#2a2a2a'}; color:#ffffff; border:1px solid ${state.authView === 'signup' ? '#e50914' : '#404040'}; border-radius:999px; padding:10px 14px; font-size:13px; font-weight:800; cursor:pointer;">Create account</button>
+          </div>
+
+          <div style="font-size:26px; font-weight:900; color:#ffffff; text-align:center; margin-bottom:10px;">${state.authView === 'login' ? 'Welcome back' : 'Create account'}</div>
+          <div style="font-size:14px; color:#b3b3b3; text-align:center; margin-bottom:20px;">Sign in to continue to Box Office</div>
+
+          <div style="display:grid; gap:14px; margin-bottom:16px;">
+            ${state.authView === 'signup' ? `<input type="text" placeholder="Full name" value="${escapeHtml(state.loginName)}" oninput="updateLoginField('name', this.value)" style="width:100%; background:#111111; color:#ffffff; border:1px solid #333333; border-radius:14px; padding:14px; font-size:16px; box-sizing:border-box;">` : ''}
+
+            <input type="email" placeholder="Email address" value="${escapeHtml(state.loginEmail)}" oninput="updateLoginField('email', this.value)" style="width:100%; background:#111111; color:#ffffff; border:1px solid #333333; border-radius:14px; padding:14px; font-size:16px; box-sizing:border-box;">
+
+            <input type="password" placeholder="Password" value="${escapeHtml(state.loginPassword)}" oninput="updateLoginField('password', this.value)" style="width:100%; background:#111111; color:#ffffff; border:1px solid #333333; border-radius:14px; padding:14px; font-size:16px; box-sizing:border-box;">
+
+            <button onclick="${state.authView === 'login' ? 'login()' : 'signup()'}" style="background:#e50914; color:#ffffff; border:none; border-radius:14px; padding:14px 18px; font-size:16px; font-weight:800; cursor:pointer;">${state.authView === 'login' ? 'Login' : 'Create account'}</button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:12px; margin:10px 0 14px 0; color:#8f8f8f; font-size:13px;">
+            <div style="height:1px; background:#2f2f2f; flex:1;"></div>
+            <div>or</div>
+            <div style="height:1px; background:#2f2f2f; flex:1;"></div>
+          </div>
+
+          <button onclick="googleLogin()" style="width:100%; background:#ffffff; color:#111111; border:none; border-radius:14px; padding:14px 18px; font-size:16px; font-weight:800; cursor:pointer;">Continue with Google</button>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div style="display:grid; grid-template-columns:minmax(300px, 0.8fr) minmax(320px, 1.2fr); gap:24px; align-items:start;">
+      <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:24px;">
+        <div style="font-size:24px; font-weight:800; margin-bottom:8px; color:#ffffff;">Account</div>
+        <div style="font-size:14px; color:#b3b3b3; margin-bottom:18px;">Signed in user</div>
+        <div style="background:#111111; border:1px solid #2c2c2c; border-radius:18px; padding:18px; margin-bottom:18px;">
+          <div style="font-size:18px; font-weight:800; color:#ffffff; margin-bottom:6px;">${escapeHtml(state.currentUser.name)}</div>
+          <div style="font-size:14px; color:#b3b3b3;">${escapeHtml(state.currentUser.email)}</div>
+        </div>
+        <div style="display:grid; gap:12px;">
+          <div style="background:#111111; border:1px solid #2c2c2c; border-radius:16px; padding:16px;">
+            <div style="font-size:13px; color:#9a9a9a; margin-bottom:8px;">Stored predictions</div>
+            <div style="font-size:28px; font-weight:900; color:#ffffff;">${history.length}</div>
+          </div>
+          <button onclick="logout()" style="background:#2a2a2a; color:#ffffff; border:1px solid #404040; border-radius:14px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer;">Log out</button>
+        </div>
+      </div>
+      <div style="background:#1b1b1b; border:1px solid #2a2a2a; border-radius:20px; padding:24px; overflow:auto;">
+        <div style="font-size:24px; font-weight:800; margin-bottom:14px; color:#ffffff;">Prediction history</div>
+        ${history.length ? `<table style="width:100%; border-collapse:collapse; min-width:760px;">
+          <thead>
+            <tr>${['Date','Mode','Genre','Studio','Budget','Revenue','ROI'].map(h => `<th style="text-align:left; padding:12px 10px; color:#9a9a9a; font-size:13px; border-bottom:1px solid #2f2f2f;">${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${history.map(row => `
+              <tr>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff;">${new Date(row.timestamp).toLocaleDateString()}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff;">${row.mode}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff;">${escapeHtml(row.genre)}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff;">${escapeHtml(row.studio)}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff;">${formatMoney(row.budget)}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff; font-weight:800;">${formatMoney(row.revenue)}</td>
+                <td style="padding:12px 10px; border-bottom:1px solid #242424; color:#ffffff; font-weight:800;">${formatPct(row.roi)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div style="font-size:14px; color:#b3b3b3; line-height:1.7;">Run a prediction while signed in to save it here.</div>`}
+      </div>
+    </div>
+  `;
+}
+
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -499,22 +679,32 @@ function render() {
           <div class="gold-title">Box Office</div>
           <div style="margin-top:10px; font-size:20px; font-weight:800; color:#ffffff; max-width:680px; text-shadow: 0 0 8px rgba(229,9,20,0.6), 0 0 16px rgba(229,9,20,0.4), 0 0 24px rgba(229,9,20,0.25); letter-spacing:0.02em;">Predict the next blockbuster.</div>
         </div>
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:stretch;">
           <div style="background:#1b1b1b; border:1px solid #2a2a2a; color:#ffffff; border-radius:16px; padding:12px 16px; min-width:130px;">
             <div style="font-size:12px; color:#9a9a9a;">Mode</div>
             <div style="font-size:24px; font-weight:900;">${state.predictionMode === 'pre' ? 'Pre' : 'Post'}</div>
+          </div>
+          <div style="background:#1b1b1b; border:1px solid #2a2a2a; color:#ffffff; border-radius:16px; padding:12px 16px; min-width:180px;">
+            <div style="font-size:12px; color:#9a9a9a;">User</div>
+            <div style="font-size:18px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${state.currentUser ? escapeHtml(state.currentUser.name) : 'Guest'}</div>
           </div>
         </div>
       </div>
 
       ${renderTabs()}
 
-      ${state.tab === 'predict' ? renderPredictTab() : state.tab === 'insights' ? renderInsightsTab() : renderTopFilmsTab()}
+      ${state.tab === 'predict' ? renderPredictTab() : state.tab === 'insights' ? renderInsightsTab() : state.tab === 'topfilms' ? renderTopFilmsTab() : renderAccountTab()}
     </div>
   `;
 }
 
 function setTab(tab){ state.tab = tab; render(); }
+function setAuthView(view){ state.authView = view; render(); }
+function updateLoginField(field, value){
+  if (field === 'name') state.loginName = value;
+  if (field === 'email') state.loginEmail = value;
+  if (field === 'password') state.loginPassword = value;
+}
 function setPredictionMode(mode){ state.predictionMode = mode; state.prediction = null; render(); }
 function updateBudget(v){ state.budget = Math.max(500000, Math.min(380000000, Number(v) || 500000)); }
 function updateMonth(v){ state.month = Number(v) || 6; }
